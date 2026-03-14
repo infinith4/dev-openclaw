@@ -1,0 +1,37 @@
+# Codex Configuration for AI-Driven Development
+# https://github.com/openai/codex
+
+[codex]
+approval_policy = "never"
+
+sandbox = "workspace-write"
+
+model = "gpt-5.4"
+
+history = true
+
+
+[workspace]
+root = "."
+
+exclude = [
+    "node_modules",
+    ".git",
+    "__pycache__",
+    "*.pyc",
+    "bin",
+    "obj",
+    "target",
+    "dist",
+    "build"
+]
+
+[security]
+sensitive_patterns = [
+    ".env",
+    ".env.*",
+    "*.key",
+    "*.pem",
+    "credentials.*",
+    "secrets.*"
+]
