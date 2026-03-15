@@ -1,8 +1,8 @@
 {
-  "name": "dev-ocr",
+  "name": "dev-openclaw",
   "dockerComposeFile": "docker-compose.yml",
   "service": "devcontainer",
-  "workspaceFolder": "/workspaces/dev-ocr",
+  "workspaceFolder": "/workspaces/dev-openclaw",
   "features": {
     "ghcr.io/devcontainers/features/node:1": {
       "version": "22"

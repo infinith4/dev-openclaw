@@ -38,14 +38,14 @@
       "Bash(npx tsx src/index.ts add --help)",
       "Bash(npx tsx src/index.ts edit --help)",
       "WebFetch(domain:langfuse.com)",
-      "Bash(find /workspaces/dev-ocr -type f \\\\\\( -name \"package.json\" -o -name \"requirements.txt\" -o -name \"pom.xml\" -o -name \"*.csproj\" \\\\\\) -exec head -30 {} +)",
+      "Bash(find /workspaces/dev-openclaw -type f \\\\\\( -name \"package.json\" -o -name \"requirements.txt\" -o -name \"pom.xml\" -o -name \"*.csproj\" \\\\\\) -exec head -30 {} +)",
       "Bash(docker --version)",
       "Bash(docker compose version)",
       "Bash(apt list --installed)",
       "Bash(snap list)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:github.com)",
-      "Bash(ls -la /c/Projects/github/infinith4/dev-ocr/*.md)",
+      "Bash(ls -la /c/Projects/github/infinith4/dev-openclaw/*.md)",
       "Bash(npm create vite@latest frontend -- --template react-ts)",
       "Bash(npm install)",
       "Bash(pip show langfuse)",
@@ -58,8 +58,8 @@
       "Bash(curl -s http://localhost:5173/)",
       "Bash(xargs ls -la)",
       "Bash(npx tsc --noEmit)",
-      "Bash(ls -la /workspaces/dev-ocr/000079352/merged/*.md)",
-      "Read(//workspaces/dev-ocr/**)",
+      "Bash(ls -la /workspaces/dev-openclaw/000079352/merged/*.md)",
+      "Read(//workspaces/dev-openclaw/**)",
       "Bash(pip install:*)",
       "Bash(python3 -c \"from paddleocr import PaddleOCR; print\\(''PaddleOCR import OK''\\)\")",
       "Bash(python3 -m pytest tests/ -v)",
@@ -67,7 +67,12 @@
       "Bash(python3 -c \"import paddleocr; print\\(paddleocr.__version__\\)\")",
       "Bash(python3 -c \":*)",
       "Bash(PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK=True python3 -c \":*)",
-      "Bash(pip index:*)"
+      "Bash(pip index:*)",
+      "Bash(xargs ls:*)",
+      "Bash(mkdir -p c:/Projects/github/infinith4/dev-openclaw/scripts/overnight)",
+      "Bash(mkdir -p c:/Projects/github/infinith4/dev-openclaw/.github/ISSUE_TEMPLATE)",
+      "Bash(npm list:*)",
+      "Bash(export PATH=\"/home/vscode/.npm-global/bin:$PATH\")"
     ]
   }
 }
