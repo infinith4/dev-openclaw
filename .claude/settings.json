@@ -30,7 +30,9 @@
       "Write",
       "Edit",
       "Glob",
-      "Grep"
+      "Grep",
+      "Bash(bash -n /workspaces/dev-openclaw/scripts/overnight/run-local.sh)",
+      "Bash(bash -n /workspaces/dev-openclaw/scripts/overnight/common.sh)"
     ],
     "deny": [
       "Bash(rm -rf /)",

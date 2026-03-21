@@ -1,0 +1,202 @@
+name: Overnight Implement
+
+on:
+  workflow_call:
+    inputs:
+      issue_number:
+        required: true
+        type: string
+      issue_title:
+        required: true
+        type: string
+      issue_body:
+        required: false
+        type: string
+      issue_labels_json:
+        required: true
+        type: string
+      dry_run:
+        required: false
+        default: false
+        type: boolean
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        required: true
+        type: string
+      issue_title:
+        required: true
+        type: string
+      issue_body:
+        required: false
+        type: string
+      issue_labels_json:
+        required: true
+        default: '["auto:implement"]'
+        type: string
+      dry_run:
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  implement:
+    runs-on: self-hosted
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create working branch
+        id: branch
+        env:
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+          ISSUE_TITLE: ${{ inputs.issue_title }}
+        run: |
+          slug="$(printf '%s' "${ISSUE_TITLE}" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//; s/-{2,}/-/g' | cut -c1-40)"
+          branch="overnight/${ISSUE_NUMBER}-${slug:-task}"
+          git checkout -b "${branch}"
+          echo "branch=${branch}" >> "$GITHUB_OUTPUT"
+
+      - name: Pre safety checks
+        env:
+          ARTIFACT_DIR: ${{ github.workspace }}/.overnight-artifacts/${{ inputs.issue_number }}
+        run: scripts/overnight/safety-check.sh pre
+
+      - name: Attempt Claude planner
+        id: claude_plan
+        env:
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+          ISSUE_TITLE: ${{ inputs.issue_title }}
+          ISSUE_BODY: ${{ inputs.issue_body }}
+          ISSUE_LABELS_JSON: ${{ inputs.issue_labels_json }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          ARTIFACT_DIR: ${{ github.workspace }}/.overnight-artifacts/${{ inputs.issue_number }}
+        run: |
+          status=0
+          scripts/overnight/dispatch-claude-plan.sh || status=$?
+          echo "exit_code=${status}" >> "$GITHUB_OUTPUT"
+          if [ "${status}" -ne 0 ] && [ "${status}" -ne 42 ]; then
+            exit "${status}"
+          fi
+
+      - name: Fallback to Codex planner
+        if: steps.claude_plan.outputs.exit_code == '42'
+        env:
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+          ISSUE_TITLE: ${{ inputs.issue_title }}
+          ISSUE_BODY: ${{ inputs.issue_body }}
+          ISSUE_LABELS_JSON: ${{ inputs.issue_labels_json }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          ARTIFACT_DIR: ${{ github.workspace }}/.overnight-artifacts/${{ inputs.issue_number }}
+        run: scripts/overnight/dispatch-codex-plan.sh
+
+      - name: Read planner metadata
+        id: planner_meta
+        env:
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+          ARTIFACT_DIR: ${{ github.workspace }}/.overnight-artifacts/${{ inputs.issue_number }}
+        run: |
+          metadata_path="${ARTIFACT_DIR}/plans/plan-metadata-${ISSUE_NUMBER}.json"
+          echo "metadata_path=${metadata_path}" >> "$GITHUB_OUTPUT"
+          echo "plan_path=$(jq -r '.plan_path' "${metadata_path}")" >> "$GITHUB_OUTPUT"
+          echo "planner=$(jq -r '.planner' "${metadata_path}")" >> "$GITHUB_OUTPUT"
+          echo "fallback_used=$(jq -r '.fallback_used' "${metadata_path}")" >> "$GITHUB_OUTPUT"
+
+      - name: Run Codex implementation
+        env:
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+          ISSUE_TITLE: ${{ inputs.issue_title }}
+          ISSUE_LABELS_JSON: ${{ inputs.issue_labels_json }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          PLAN_PATH: ${{ steps.planner_meta.outputs.plan_path }}
+          PLANNER: ${{ steps.planner_meta.outputs.planner }}
+          ARTIFACT_DIR: ${{ github.workspace }}/.overnight-artifacts/${{ inputs.issue_number }}
+        run: scripts/overnight/dispatch-codex.sh
+
+      - name: Run Claude review
+        id: review
+        continue-on-error: true
+        env:
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+          ISSUE_TITLE: ${{ inputs.issue_title }}
+          PLAN_PATH: ${{ steps.planner_meta.outputs.plan_path }}
+          PLANNER: ${{ steps.planner_meta.outputs.planner }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          ARTIFACT_DIR: ${{ github.workspace }}/.overnight-artifacts/${{ inputs.issue_number }}
+        run: scripts/overnight/dispatch-claude-review.sh
+
+      - name: Render PR review body
+        env:
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+          REVIEW_PATH: ${{ github.workspace }}/.overnight-artifacts/${{ inputs.issue_number }}/review-${{ inputs.issue_number }}.json
+          ARTIFACT_DIR: ${{ github.workspace }}/.overnight-artifacts/${{ inputs.issue_number }}
+        run: scripts/overnight/cross-review.sh
+
+      - name: Post safety checks
+        if: always()
+        env:
+          ARTIFACT_DIR: ${{ github.workspace }}/.overnight-artifacts/${{ inputs.issue_number }}
+        run: scripts/overnight/safety-check.sh post
+
+      - name: Commit changes
+        id: commit
+        if: ${{ inputs.dry_run == false }}
+        env:
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+        run: |
+          if git diff --quiet && git diff --cached --quiet; then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git config user.name "overnight-bot"
+          git config user.email "overnight-bot@users.noreply.github.com"
+          git add -A
+          git commit -m "overnight: implement issue #${ISSUE_NUMBER}"
+          echo "has_changes=true" >> "$GITHUB_OUTPUT"
+
+      - name: Push branch
+        if: ${{ inputs.dry_run == false && steps.commit.outputs.has_changes == 'true' }}
+        run: git push --set-upstream origin "${{ steps.branch.outputs.branch }}"
+
+      - name: Create pull request
+        if: ${{ inputs.dry_run == false && steps.commit.outputs.has_changes == 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          body_file="${{ github.workspace }}/.overnight-artifacts/${{ inputs.issue_number }}/pr-review-${{ inputs.issue_number }}.md"
+          gh pr create \
+            --base main \
+            --head "${{ steps.branch.outputs.branch }}" \
+            --title "Overnight: #${{ inputs.issue_number }} ${{ inputs.issue_title }}" \
+            --body-file "${body_file}"
+
+      - name: Write run summary
+        if: always()
+        env:
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+          ARTIFACT_DIR: ${{ github.workspace }}/.overnight-artifacts/${{ inputs.issue_number }}
+        run: |
+          jq -n \
+            --arg issue_number "${ISSUE_NUMBER}" \
+            --arg planner "${{ steps.planner_meta.outputs.planner }}" \
+            --arg branch "${{ steps.branch.outputs.branch }}" \
+            --arg status "${{ job.status }}" \
+            --arg review_status "${{ steps.review.outcome || 'skipped' }}" \
+            --argjson fallback_used ${{ steps.planner_meta.outputs.fallback_used || 'false' }} \
+            '{
+              issue_number: ($issue_number | tonumber),
+              planner: $planner,
+              fallback_used: $fallback_used,
+              branch: $branch,
+              status: $status,
+              review_status: $review_status
+            }' > "${ARTIFACT_DIR}/run-summary.json"
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: overnight-${{ inputs.issue_number }}
+          path: ${{ github.workspace }}/.overnight-artifacts/${{ inputs.issue_number }}

@@ -1,0 +1,29 @@
+name: Auto Implement
+description: Queue an overnight implementation task
+title: '[auto:implement] '
+labels:
+  - auto:implement
+body:
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      description: Describe the change the overnight agents should implement.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      description: List the expected behavior and verification points.
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - priority:high
+        - priority:low
+    validations:
+      required: true

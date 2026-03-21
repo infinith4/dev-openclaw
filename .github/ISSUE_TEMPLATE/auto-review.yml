@@ -1,0 +1,20 @@
+name: Auto Review
+description: Queue an overnight review or follow-up task
+title: '[auto:review] '
+labels:
+  - auto:review
+body:
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: Describe the code, branch, or PR to review.
+    validations:
+      required: true
+  - type: textarea
+    id: expectations
+    attributes:
+      label: Expectations
+      description: Describe the issues to focus on or outcomes to produce.
+    validations:
+      required: true

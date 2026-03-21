@@ -1,0 +1,20 @@
+name: Auto Test
+description: Queue an overnight automated test task
+title: '[auto:test] '
+labels:
+  - auto:test
+body:
+  - type: textarea
+    id: target
+    attributes:
+      label: Test Target
+      description: Describe the functionality that needs tests.
+    validations:
+      required: true
+  - type: textarea
+    id: scenarios
+    attributes:
+      label: Scenarios
+      description: Include the success, failure, and edge cases to cover.
+    validations:
+      required: true

@@ -1,23 +1,39 @@
 # 自律夜間稼働環境 - Claude Code Planner × Codex Implementer
 
 ## Context
-現在のdev-openclawリポジトリは13のAIエージェント、ExecPlanフレームワーク、Claude Code/Codex/Copilotの設定が整備されているが、**人間不在での自律稼働の仕組みがない**。夜間にGitHub Issueをタスクキューとして、Claude Codeが実行計画を作成し、Codexがその計画に沿って実装・テストを行い、翌朝PRとレポートが揃っている環境を構築する。
+現在のdev-openclawリポジトリは13のAIエージェント、ExecPlanフレームワーク、Claude Code/Codex/Copilotの設定が整備されているが、**人間不在での自律稼働の仕組みがない**。夜間にGitHub Issueまたはローカル plan ファイルをタスクソースとして、Claude Codeが実行計画を作成し、Codexがその計画に沿って実装・テストを行い、翌朝PRとレポートが揃っている環境を構築する。
 
 ---
 
 ## アーキテクチャ
 
+### タスクソース
+
+タスクは以下の 2 つのソースから取得できる:
+
+| ソース | 指定方法 | `gh` 必要 | 用途 |
+|--------|---------|-----------|------|
+| GitHub Issue | `--issue-number <N>` | 必要 | CI/夜間自動実行、チーム運用 |
+| ローカル plan ファイル | `--plan-file <path>` | 不要 | ローカル開発、オフライン実行、設計駆動 |
+
+ローカル plan ファイルは `docs/plan/` 配下に Markdown で作成する。フォーマットは [docs/plan/_template.md](../plan/_template.md) を参照。
+
+### フロー
+
 ```
-Cron (23:00 JST 任意に設定可能) → GitHub Actions Orchestrator
-  → Issue取得 (auto:* ラベル)
-  → Issue毎に:
-    1. ブランチ作成 (overnight/{issue番号}-{slug})
+タスクソース (GitHub Issue or docs/plan/*.md)
+  → run-local.sh (--issue-number | --plan-file)
+  → タスク毎に:
+    1. ブランチ作成 (overnight/{task-id}-{slug})
     2. Claude Code で ExecPlan / 実装タスクリスト生成
     3. Codex で実装
     4. テスト実行
     5. Claude Code でレビュー/計画との差分確認
     6. PR作成
   → 朝レポート生成 (GitHub Issue + Slack通知)
+
+GitHub Actions Orchestrator (Cron 23:00 JST):
+  → Issue取得 (auto:* ラベル) → 上記フローを Issue 毎に実行
 ```
 
 ### 役割分担
@@ -43,6 +59,8 @@ Cron (23:00 JST 任意に設定可能) → GitHub Actions Orchestrator
 ### スクリプト
 | ファイル | 役割 |
 |---------|------|
+| `scripts/overnight/run-local.sh` | ローカル実行エントリポイント (Issue / plan ファイル両対応) |
+| `scripts/overnight/common.sh` | 共通関数 (ログ、slugify、`parse_plan_file` 等) |
 | `scripts/overnight/fetch-issues.sh` | GitHub Issues取得 (auto:*ラベル、priority順) |
 | `scripts/overnight/dispatch-claude-plan.sh` | Claude Code で ExecPlan / 実装タスク生成 |
 | `scripts/overnight/dispatch-codex.sh` | Codex CLI で実装・テスト実行 |
@@ -52,6 +70,12 @@ Cron (23:00 JST 任意に設定可能) → GitHub Actions Orchestrator
 | `scripts/overnight/safety-check.sh` | 安全性チェック (pre/post) |
 | `scripts/overnight/generate-report.sh` | 朝サマリー生成 |
 | `scripts/overnight/notify.sh` | Slack/Discord通知 |
+
+### ローカル plan ファイル
+| ファイル | 役割 |
+|---------|------|
+| `docs/plan/_template.md` | plan ファイルのテンプレート |
+| `docs/plan/*.md` | 個別タスク定義ファイル |
 
 ### Issue テンプレート
 | ファイル | 用途 |

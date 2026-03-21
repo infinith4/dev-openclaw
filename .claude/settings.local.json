@@ -72,7 +72,28 @@
       "Bash(mkdir -p c:/Projects/github/infinith4/dev-openclaw/scripts/overnight)",
       "Bash(mkdir -p c:/Projects/github/infinith4/dev-openclaw/.github/ISSUE_TEMPLATE)",
       "Bash(npm list:*)",
-      "Bash(export PATH=\"/home/vscode/.npm-global/bin:$PATH\")"
+      "Bash(export PATH=\"/home/vscode/.npm-global/bin:$PATH\")",
+      "Bash(npm config:*)",
+      "Read(//workspaces/dev-openclaw/$\\(npm config get prefix 2>/dev/null\\)/**)",
+      "Read(//home/vscode/.local/bin/**)",
+      "Bash(export PATH=\"$PATH:$HOME/.npm-global/bin:$HOME/.local/bin\")",
+      "Bash(npm install:*)",
+      "Bash(command -v gh)",
+      "Bash(curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg)",
+      "Bash(sudo dd:*)",
+      "Bash(sudo tee:*)",
+      "Bash(sudo apt-get:*)",
+      "Bash(export PATH=\"$PATH:$HOME/.npm-global/bin\")",
+      "Bash(claude --version)",
+      "Bash(gh --version)",
+      "Bash(PATH=\"$HOME/.npm-global/bin:$PATH\")",
+      "Read(//workspaces/dev-openclaw/$HOME/.npm-global/bin/**)",
+      "Bash(\"$HOME/.npm-global/bin/codex\" --version)",
+      "Bash(\"$HOME/.npm-global/bin/claude\" --version)",
+      "Bash(echo \"$HOME\")",
+      "Bash(/home/vscode/.npm-global/bin/codex --version)",
+      "Bash(/home/vscode/.npm-global/bin/claude --version)",
+      "Bash(/usr/bin/gh --version)"
     ]
   }
 }

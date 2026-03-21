@@ -1,0 +1,72 @@
+name: Overnight Review
+
+on:
+  workflow_call:
+    inputs:
+      issue_number:
+        required: true
+        type: string
+      issue_title:
+        required: true
+        type: string
+      planner:
+        required: true
+        type: string
+      dry_run:
+        required: false
+        default: false
+        type: boolean
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        required: true
+        type: string
+      issue_title:
+        required: true
+        type: string
+      planner:
+        required: true
+        type: string
+      dry_run:
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  review:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: overnight-${{ inputs.issue_number }}
+          path: ${{ github.workspace }}/.overnight-artifacts/${{ inputs.issue_number }}
+
+      - name: Run Claude review
+        env:
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+          ISSUE_TITLE: ${{ inputs.issue_title }}
+          PLAN_PATH: ${{ github.workspace }}/.overnight-artifacts/${{ inputs.issue_number }}/plans/plan-${{ inputs.issue_number }}.md
+          PLANNER: ${{ inputs.planner }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          ARTIFACT_DIR: ${{ github.workspace }}/.overnight-artifacts/${{ inputs.issue_number }}
+        run: |
+          status=0
+          scripts/overnight/dispatch-claude-review.sh || status=$?
+          echo "review exit code: ${status}"
+
+      - name: Render review markdown
+        env:
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+          REVIEW_PATH: ${{ github.workspace }}/.overnight-artifacts/${{ inputs.issue_number }}/review-${{ inputs.issue_number }}.json
+          ARTIFACT_DIR: ${{ github.workspace }}/.overnight-artifacts/${{ inputs.issue_number }}
+        run: scripts/overnight/cross-review.sh
+
+      - name: Upload review artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: overnight-review-${{ inputs.issue_number }}
+          path: ${{ github.workspace }}/.overnight-artifacts/${{ inputs.issue_number }}

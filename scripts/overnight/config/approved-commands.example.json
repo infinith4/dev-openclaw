@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "commands": [
+    {
+      "match": "prefix",
+      "command": "git status",
+      "description": "Inspect working tree status"
+    },
+    {
+      "match": "prefix",
+      "command": "git diff",
+      "description": "Inspect repository diff"
+    },
+    {
+      "match": "prefix",
+      "command": "npm test",
+      "description": "Run approved Node.js test suites"
+    },
+    {
+      "match": "prefix",
+      "command": "pytest",
+      "description": "Run approved Python test suites"
+    },
+    {
+      "match": "prefix",
+      "command": "dotnet test",
+      "description": "Run approved .NET test suites"
+    },
+    {
+      "match": "prefix",
+      "command": "mvn test",
+      "description": "Run approved Maven test suites"
+    }
+  ]
+}

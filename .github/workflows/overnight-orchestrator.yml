@@ -1,0 +1,77 @@
+name: Overnight Orchestrator
+
+on:
+  schedule:
+    - cron: '0 15 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Run in dry-run mode
+        required: false
+        default: true
+        type: boolean
+      issue_number:
+        description: Single issue number to process in dry-run mode
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  issues: read
+  pull-requests: write
+
+concurrency:
+  group: overnight-orchestrator
+  cancel-in-progress: false
+
+jobs:
+  fetch-issues:
+    runs-on: self-hosted
+    outputs:
+      issues: ${{ steps.fetch.outputs.issues }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Ensure overnight automation is enabled
+        run: |
+          if [ "${{ secrets.OVERNIGHT_ENABLED }}" != "true" ]; then
+            echo "OVERNIGHT_ENABLED is not true; exiting."
+            exit 1
+          fi
+
+      - name: Fetch issue queue
+        id: fetch
+        env:
+          DRY_RUN: ${{ inputs.dry_run || 'false' }}
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+          ARTIFACT_DIR: ${{ github.workspace }}/.overnight-artifacts
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: scripts/overnight/fetch-issues.sh
+
+  run-issue:
+    needs: fetch-issues
+    if: needs.fetch-issues.outputs.issues != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        issue: ${{ fromJson(needs.fetch-issues.outputs.issues) }}
+    uses: ./.github/workflows/overnight-implement.yml
+    with:
+      issue_number: ${{ matrix.issue.number }}
+      issue_title: ${{ matrix.issue.title }}
+      issue_body: ${{ matrix.issue.body }}
+      issue_labels_json: ${{ toJson(matrix.issue.labels) }}
+      dry_run: ${{ inputs.dry_run || false }}
+    secrets: inherit
+
+  report:
+    needs:
+      - fetch-issues
+      - run-issue
+    if: always()
+    uses: ./.github/workflows/overnight-report.yml
+    with:
+      dry_run: ${{ inputs.dry_run || false }}
+    secrets: inherit

@@ -1,0 +1,100 @@
+name: Overnight Plan
+
+on:
+  workflow_call:
+    inputs:
+      issue_number:
+        required: true
+        type: string
+      issue_title:
+        required: true
+        type: string
+      issue_body:
+        required: false
+        type: string
+      issue_labels_json:
+        required: true
+        type: string
+      dry_run:
+        required: false
+        default: false
+        type: boolean
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        required: true
+        type: string
+      issue_title:
+        required: true
+        type: string
+      issue_body:
+        required: false
+        type: string
+      issue_labels_json:
+        required: true
+        default: '["auto:implement"]'
+        type: string
+      dry_run:
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  plan:
+    runs-on: self-hosted
+    outputs:
+      planner: ${{ steps.meta.outputs.planner }}
+      plan_path: ${{ steps.meta.outputs.plan_path }}
+      metadata_path: ${{ steps.meta.outputs.metadata_path }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Attempt Claude planner
+        id: claude_plan
+        env:
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+          ISSUE_TITLE: ${{ inputs.issue_title }}
+          ISSUE_BODY: ${{ inputs.issue_body }}
+          ISSUE_LABELS_JSON: ${{ inputs.issue_labels_json }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          ARTIFACT_DIR: ${{ github.workspace }}/.overnight-artifacts/${{ inputs.issue_number }}
+        run: |
+          status=0
+          scripts/overnight/dispatch-claude-plan.sh || status=$?
+          echo "exit_code=${status}" >> "$GITHUB_OUTPUT"
+          if [ "${status}" -ne 0 ] && [ "${status}" -ne 42 ]; then
+            exit "${status}"
+          fi
+
+      - name: Fallback to Codex planner
+        id: codex_plan
+        if: steps.claude_plan.outputs.exit_code == '42'
+        env:
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+          ISSUE_TITLE: ${{ inputs.issue_title }}
+          ISSUE_BODY: ${{ inputs.issue_body }}
+          ISSUE_LABELS_JSON: ${{ inputs.issue_labels_json }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          ARTIFACT_DIR: ${{ github.workspace }}/.overnight-artifacts/${{ inputs.issue_number }}
+        run: scripts/overnight/dispatch-codex-plan.sh
+
+      - name: Publish plan metadata
+        id: meta
+        env:
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+          ARTIFACT_DIR: ${{ github.workspace }}/.overnight-artifacts/${{ inputs.issue_number }}
+        run: |
+          metadata_path="${ARTIFACT_DIR}/plans/plan-metadata-${ISSUE_NUMBER}.json"
+          plan_path="$(jq -r '.plan_path' "${metadata_path}")"
+          planner="$(jq -r '.planner' "${metadata_path}")"
+          echo "metadata_path=${metadata_path}" >> "$GITHUB_OUTPUT"
+          echo "plan_path=${plan_path}" >> "$GITHUB_OUTPUT"
+          echo "planner=${planner}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload plan artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: overnight-plan-${{ inputs.issue_number }}
+          path: ${{ github.workspace }}/.overnight-artifacts/${{ inputs.issue_number }}/plans
