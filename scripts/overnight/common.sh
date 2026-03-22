@@ -62,7 +62,13 @@ slugify() {
 }
 
 issue_slug() {
-  slugify "${ISSUE_TITLE:-issue}"
+  local slug
+  slug="$(slugify "${ISSUE_TITLE:-issue}")"
+  # Fallback if slugify produces empty string (e.g. non-ASCII title)
+  if [[ -z "${slug}" ]]; then
+    slug="task-${ISSUE_NUMBER:-0}"
+  fi
+  printf '%s' "${slug}"
 }
 
 ensure_workspace_path() {
