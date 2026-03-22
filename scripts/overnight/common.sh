@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Ensure npm global and pip user bins are in PATH (devcontainer may not load .bashrc)
+export PATH="${HOME}/.npm-global/bin:${HOME}/.local/bin:${HOME}/bin:${PATH}"
+
 OVERFLOW_GUARD="${OVERFLOW_GUARD:-20}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
