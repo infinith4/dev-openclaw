@@ -51,7 +51,7 @@ fi
 
 set +e
 claude -p "${review_prompt}" \
-  --yes \
+  --permission-mode auto \
   --allowedTools "Read,Glob,Grep,Bash(ls *),Bash(cat *),Bash(${REPO_ROOT}/scripts/overnight/command-gate.sh *)" \
   --max-turns 30 \
   > "${review_path}" 2> "${log_path}"
