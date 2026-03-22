@@ -43,8 +43,7 @@ else
   require_command codex
   codex exec \
     -C "${REPO_ROOT}" \
-    -s workspace-write \
-    -a untrusted \
+    --full-auto \
     -o "${summary_path}" \
     "${implement_prompt}"
 fi
