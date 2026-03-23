@@ -23,10 +23,25 @@ ensure_clean_before_checkout() {
     return 0
   fi
 
-  if ! git diff --quiet || ! git diff --cached --quiet; then
-    log "working tree has uncommitted changes; commit or stash before switching to ${target_branch}"
-    exit 1
+  # Stash trivial config changes (e.g. .claude/settings.json auto-updated by IDE)
+  local dirty_files
+  dirty_files="$(git diff --name-only; git diff --cached --name-only)"
+  if [[ -z "${dirty_files}" ]]; then
+    return 0
   fi
+
+  # Auto-stash if only IDE/tool config files are dirty
+  local non_config_dirty
+  non_config_dirty="$(printf '%s\n' "${dirty_files}" | grep -v '^\.claude/' | grep -v '^\.vscode/' || true)"
+  if [[ -z "${non_config_dirty}" ]]; then
+    log "auto-stashing IDE config changes before branch switch"
+    git stash push -q -m "overnight: auto-stash config before ${target_branch}"
+    return 0
+  fi
+
+  log "working tree has uncommitted changes; commit or stash before switching to ${target_branch}"
+  log "dirty files: ${dirty_files}"
+  exit 1
 }
 
 resolve_base_ref() {

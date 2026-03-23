@@ -51,7 +51,6 @@ else
   codex exec \
     -C "${REPO_ROOT}" \
     -s read-only \
-    -a untrusted \
     -o "${plan_path}" \
     "${planning_prompt}"
 fi

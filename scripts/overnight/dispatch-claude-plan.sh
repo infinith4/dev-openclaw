@@ -66,7 +66,7 @@ fi
 
 set +e
 claude -p "${planning_prompt}" \
-  --yes \
+  --permission-mode auto \
   --allowedTools "Read,Write,Edit,Glob,Grep,Bash(ls *),Bash(cat *),Bash(${REPO_ROOT}/scripts/overnight/command-gate.sh *)" \
   --max-turns 50 \
   > "${plan_path}" 2> "${log_path}"

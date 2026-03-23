@@ -32,7 +32,21 @@
       "Glob",
       "Grep",
       "Bash(bash -n /workspaces/dev-openclaw/scripts/overnight/run-local.sh)",
-      "Bash(bash -n /workspaces/dev-openclaw/scripts/overnight/common.sh)"
+      "Bash(bash -n /workspaces/dev-openclaw/scripts/overnight/common.sh)",
+      "Bash(python -m ruff check backendapp/notebooklm/)",
+      "Bash(python -m ruff format --check backendapp/notebooklm/)",
+      "Bash(python -m ruff format backendapp/notebooklm/)",
+      "Bash(python -m backendapp.notebooklm.cli --help)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(grep -r \"paddleocr\\\\|ndlocr\\\\|pdf2image\" /workspaces/dev-openclaw --include=*.py --include=*.txt --include=*.md)",
+      "Bash(find /workspaces/dev-openclaw/backendapp -type f -name *.py)",
+      "Bash(find /workspaces/dev-openclaw/tests -type f -name *.py)",
+      "Bash(git log:*)",
+      "Bash(grep -r \"ocr\\\\|OCR\\\\|paddle\\\\|ndlocr\\\\|pdf2image\" /workspaces/dev-openclaw --include=*.md --include=*.txt --include=*.json --include=*.sh)",
+      "Bash(grep -r \"ocr_service\\\\|ocr_evaluation\\\\|pdf_service\" /workspaces/dev-openclaw --include=*.py --include=*.md --include=*.json)",
+      "Bash(find /workspaces/dev-openclaw -type f \\\\\\(-name *.py -o -name *.txt -o -name *.sh -o -name *.md \\\\\\))",
+      "Bash(find /workspaces/dev-openclaw -type f \\\\\\(-name Dockerfile* -o -name docker-compose* -o -name .dockerignore \\\\\\))"
     ],
     "deny": [
       "Bash(rm -rf /)",
