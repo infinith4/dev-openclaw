@@ -24,11 +24,8 @@ fi
 # --- Python tools ---
 pip install --user ruff black
 
-# --- Install backend dependencies (including PaddleOCR) ---
+# --- Install backend dependencies ---
 pip install --user -r /workspaces/dev-openclaw/backendapp/requirements.txt
-
-# Pre-download PaddleOCR Japanese models
-PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK=True python3 -c "from paddleocr import PaddleOCR; PaddleOCR(lang='japan', use_textline_orientation=True)"
 
 # --- Install frontend dependencies ---
 cd /workspaces/dev-openclaw/frontend && npm install
