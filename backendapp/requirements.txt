@@ -11,3 +11,4 @@ paddleocr>=3.4.0
 ndlocr-lite @ git+https://github.com/ndl-lab/ndlocr-lite.git
 python-Levenshtein>=0.25.0
 jiwer>=3.0.0
+playwright>=1.40.0
